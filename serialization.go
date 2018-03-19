@@ -48,6 +48,8 @@ func SerializeSCTSignatureInput(sct SignedCertificateTimestamp, entry LogEntry) 
 			}
 		case XJSONLogEntryType:
 			input.JSONEntry = entry.Leaf.TimestampedEntry.JSONEntry
+		case XObjectHashLogEntryType:
+			input.ObjectHashEntry = entry.Leaf.TimestampedEntry.ObjectHashEntry
 		default:
 			return nil, fmt.Errorf("unsupported entry type %s", entry.Leaf.TimestampedEntry.EntryType)
 		}
@@ -114,6 +116,19 @@ func CreateJSONMerkleTreeLeaf(data interface{}, timestamp uint64) *MerkleTreeLea
 			Timestamp: timestamp,
 			EntryType: XJSONLogEntryType,
 			JSONEntry: &JSONDataEntry{Data: []byte(jsonStr)},
+		},
+	}
+}
+
+// CreateObjectHashMerkleTreeLeaf creates the merkle tree leaf for json data using objecthash
+func CreateObjectHashMerkleTreeLeaf(hash ObjectHash, timestamp uint64) *MerkleTreeLeaf {
+	return &MerkleTreeLeaf{
+		Version:  V1,
+		LeafType: TimestampedEntryLeafType,
+		TimestampedEntry: &TimestampedEntry{
+			Timestamp:       timestamp,
+			EntryType:       XObjectHashLogEntryType,
+			ObjectHashEntry: &hash,
 		},
 	}
 }

@@ -119,11 +119,20 @@ func (c *LogClient) AddPreChain(ctx context.Context, chain []ct.ASN1Cert) (*ct.S
 	return c.addChainWithRetry(ctx, ct.PrecertLogEntryType, ct.AddPreChainPath, chain)
 }
 
+// AddObjectHash submits arbitrary data to an XObjectHash server.
+// Often hash is the result of objecthash.ObjectHash(extraData), but that is up to the user.
+func (c *LogClient) AddObjectHash(ctx context.Context, hash ct.ObjectHash, extraData interface{}) (*ct.SignedCertificateTimestamp, error) {
+	return c.submitAddRequestToPath(ctx, ct.AddObjectHashPath, &ct.AddObjectHashRequest{Hash: hash, ExtraData: extraData})
+}
+
 // AddJSON submits arbitrary data to to XJSON server.
 func (c *LogClient) AddJSON(ctx context.Context, data interface{}) (*ct.SignedCertificateTimestamp, error) {
-	req := ct.AddJSONRequest{Data: data}
+	return c.submitAddRequestToPath(ctx, ct.AddJSONPath, &ct.AddJSONRequest{Data: data})
+}
+
+func (c *LogClient) submitAddRequestToPath(ctx context.Context, path string, req interface{}) (*ct.SignedCertificateTimestamp, error) {
 	var resp ct.AddChainResponse
-	httpRsp, body, err := c.PostAndParse(ctx, ct.AddJSONPath, &req, &resp)
+	httpRsp, body, err := c.PostAndParse(ctx, path, req, &resp)
 	if err != nil {
 		return nil, err
 	}

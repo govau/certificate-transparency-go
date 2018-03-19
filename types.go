@@ -36,9 +36,10 @@ type LogEntryType tls.Enum // tls:"maxval:65535"
 
 // LogEntryType constants from section 3.1.
 const (
-	X509LogEntryType    LogEntryType = 0
-	PrecertLogEntryType LogEntryType = 1
-	XJSONLogEntryType   LogEntryType = 0x8000 // Experimental.  Don't rely on this!
+	X509LogEntryType        LogEntryType = 0
+	PrecertLogEntryType     LogEntryType = 1
+	XJSONLogEntryType       LogEntryType = 0x8000 // Experimental.  Don't rely on this!
+	XObjectHashLogEntryType LogEntryType = 0x8001 // Experimental.  Don't rely on this!
 )
 
 func (e LogEntryType) String() string {
@@ -49,6 +50,8 @@ func (e LogEntryType) String() string {
 		return "PrecertLogEntryType"
 	case XJSONLogEntryType:
 		return "XJSONLogEntryType"
+	case XObjectHashLogEntryType:
+		return "XObjectHashLogEntryType"
 	default:
 		return fmt.Sprintf("UnknownEntryType(%d)", e)
 	}
@@ -120,6 +123,9 @@ func (st SignatureType) String() string {
 type ASN1Cert struct {
 	Data []byte `tls:"minlen:1,maxlen:16777215"`
 }
+
+// ObjectHash is the objecthash for an object
+type ObjectHash [sha256.Size]byte
 
 // LogID holds the hash of the Log's public key (section 3.2).
 // TODO(pphaneuf): Users should be migrated to the one in the logid package.
@@ -322,14 +328,15 @@ type SignedCertificateTimestamp struct {
 // CertificateTimestamp is the collection of data that the signature in an
 // SCT is over; see section 3.2.
 type CertificateTimestamp struct {
-	SCTVersion    Version       `tls:"maxval:255"`
-	SignatureType SignatureType `tls:"maxval:255"`
-	Timestamp     uint64
-	EntryType     LogEntryType   `tls:"maxval:65535"`
-	X509Entry     *ASN1Cert      `tls:"selector:EntryType,val:0"`
-	PrecertEntry  *PreCert       `tls:"selector:EntryType,val:1"`
-	JSONEntry     *JSONDataEntry `tls:"selector:EntryType,val:32768"`
-	Extensions    CTExtensions   `tls:"minlen:0,maxlen:65535"`
+	SCTVersion      Version       `tls:"maxval:255"`
+	SignatureType   SignatureType `tls:"maxval:255"`
+	Timestamp       uint64
+	EntryType       LogEntryType   `tls:"maxval:65535"`
+	X509Entry       *ASN1Cert      `tls:"selector:EntryType,val:0"`
+	PrecertEntry    *PreCert       `tls:"selector:EntryType,val:1"`
+	JSONEntry       *JSONDataEntry `tls:"selector:EntryType,val:32768"`
+	ObjectHashEntry *ObjectHash    `tls:"selector:EntryType,val:32769"`
+	Extensions      CTExtensions   `tls:"minlen:0,maxlen:65535"`
 }
 
 func (s SignedCertificateTimestamp) String() string {
@@ -342,12 +349,13 @@ func (s SignedCertificateTimestamp) String() string {
 
 // TimestampedEntry is part of the MerkleTreeLeaf structure; see section 3.4.
 type TimestampedEntry struct {
-	Timestamp    uint64
-	EntryType    LogEntryType   `tls:"maxval:65535"`
-	X509Entry    *ASN1Cert      `tls:"selector:EntryType,val:0"`
-	PrecertEntry *PreCert       `tls:"selector:EntryType,val:1"`
-	JSONEntry    *JSONDataEntry `tls:"selector:EntryType,val:32768"`
-	Extensions   CTExtensions   `tls:"minlen:0,maxlen:65535"`
+	Timestamp       uint64
+	EntryType       LogEntryType   `tls:"maxval:65535"`
+	X509Entry       *ASN1Cert      `tls:"selector:EntryType,val:0"`
+	PrecertEntry    *PreCert       `tls:"selector:EntryType,val:1"`
+	JSONEntry       *JSONDataEntry `tls:"selector:EntryType,val:32768"`
+	ObjectHashEntry *ObjectHash    `tls:"selector:EntryType,val:32769"`
+	Extensions      CTExtensions   `tls:"minlen:0,maxlen:65535"`
 }
 
 // MerkleTreeLeaf represents the deserialized structure of the hash input for the
@@ -424,7 +432,8 @@ const (
 	GetRootsPath          = "/ct/v1/get-roots"
 	GetEntryAndProofPath  = "/ct/v1/get-entry-and-proof"
 
-	AddJSONPath = "/ct/v1/add-json" // Experimental addition
+	AddJSONPath       = "/ct/v1/add-json"       // Experimental addition
+	AddObjectHashPath = "/ct/v1/add-objecthash" // Experimental addition
 )
 
 // AddChainRequest represents the JSON request body sent to the add-chain and
@@ -450,6 +459,14 @@ type AddChainResponse struct {
 // This is an experimental addition not covered by RFC6962.
 type AddJSONRequest struct {
 	Data interface{} `json:"data"`
+}
+
+// AddObjectHashRequest represents the JSON request body sent to the add-objecthash POST method.
+// The corresponding response re-uses AddChainResponse.
+// This is an experimental addition not covered by RFC6962.
+type AddObjectHashRequest struct {
+	Hash      ObjectHash  `json:"hash"`
+	ExtraData interface{} `json:"extra_data"`
 }
 
 // GetSTHResponse respresents the JSON response to the get-sth GET method from section 4.3.
