@@ -331,6 +331,12 @@ func (rle *RawLogEntry) ToLogEntry() (*LogEntry, error) {
 			TBSCertificate: tbsCert,
 		}
 
+	case XObjectHashLogEntryType:
+		entry.ObjectHash = *leaf.TimestampedEntry.ObjectHashEntry
+		err = json.Unmarshal(leafEntry.ExtraData, &entry.ObjectData)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unknown entry type: %v", eType)
 	}

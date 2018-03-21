@@ -238,6 +238,10 @@ type LogEntry struct {
 	// Chain holds the issuing certificate chain, starting with the
 	// issuer of the leaf certificate / pre-certificate.
 	Chain []ASN1Cert
+
+	// Set for type XObjectHashLogEntryType
+	ObjectHash ObjectHash
+	ObjectData map[string]interface{}
 }
 
 // PrecertChainEntry holds an precertificate together with a validation chain
