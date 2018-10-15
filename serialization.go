@@ -50,6 +50,8 @@ func SerializeSCTSignatureInput(sct SignedCertificateTimestamp, entry LogEntry) 
 			input.JSONEntry = entry.Leaf.TimestampedEntry.JSONEntry
 		case XObjectHashLogEntryType:
 			input.ObjectHashEntry = entry.Leaf.TimestampedEntry.ObjectHashEntry
+		case XCMSLogEntryType:
+			input.CMSEntry = entry.Leaf.TimestampedEntry.CMSEntry
 		default:
 			return nil, fmt.Errorf("unsupported entry type %s", entry.Leaf.TimestampedEntry.EntryType)
 		}
@@ -129,6 +131,19 @@ func CreateObjectHashMerkleTreeLeaf(hash ObjectHash, timestamp uint64) *MerkleTr
 			Timestamp:       timestamp,
 			EntryType:       XObjectHashLogEntryType,
 			ObjectHashEntry: &hash,
+		},
+	}
+}
+
+// CreateCMSMerkleTreeLeaf creates the merkle tree leaf
+func CreateCMSMerkleTreeLeaf(data []byte, timestamp uint64) *MerkleTreeLeaf {
+	return &MerkleTreeLeaf{
+		Version:  V1,
+		LeafType: TimestampedEntryLeafType,
+		TimestampedEntry: &TimestampedEntry{
+			Timestamp: timestamp,
+			EntryType: XCMSLogEntryType,
+			CMSEntry:  &CMSEntry{Data: data},
 		},
 	}
 }
@@ -331,12 +346,9 @@ func (rle *RawLogEntry) ToLogEntry() (*LogEntry, error) {
 			TBSCertificate: tbsCert,
 		}
 
-	case XObjectHashLogEntryType:
-		entry.ObjectHash = *leaf.TimestampedEntry.ObjectHashEntry
-		err = json.Unmarshal(leafEntry.ExtraData, &entry.ObjectData)
-		if err != nil {
-			return nil, err
-		}
+	case XCMSLogEntryType:
+		entry.CMSData = rle.Leaf.TimestampedEntry.CMSEntry.Data
+
 	default:
 		return nil, fmt.Errorf("unknown entry type: %v", eType)
 	}

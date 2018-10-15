@@ -125,6 +125,11 @@ func (c *LogClient) AddObjectHash(ctx context.Context, hash ct.ObjectHash, extra
 	return c.submitAddRequestToPath(ctx, ct.AddObjectHashPath, &ct.AddObjectHashRequest{Hash: hash, ExtraData: extraData})
 }
 
+// AddCMS submits arbitrary data
+func (c *LogClient) AddCMS(ctx context.Context, data []byte) (*ct.SignedCertificateTimestamp, error) {
+	return c.submitAddRequestToPath(ctx, ct.AddCMSPath, &ct.AddCMSRequest{Data: data})
+}
+
 // AddJSON submits arbitrary data to to XJSON server.
 func (c *LogClient) AddJSON(ctx context.Context, data interface{}) (*ct.SignedCertificateTimestamp, error) {
 	return c.submitAddRequestToPath(ctx, ct.AddJSONPath, &ct.AddJSONRequest{Data: data})

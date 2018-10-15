@@ -40,6 +40,7 @@ const (
 	PrecertLogEntryType     LogEntryType = 1
 	XJSONLogEntryType       LogEntryType = 0x8000 // Experimental.  Don't rely on this!
 	XObjectHashLogEntryType LogEntryType = 0x8001 // Experimental.  Don't rely on this!
+	XCMSLogEntryType        LogEntryType = 0x8002 // Experimental.  Don't rely on this!
 )
 
 func (e LogEntryType) String() string {
@@ -52,6 +53,8 @@ func (e LogEntryType) String() string {
 		return "XJSONLogEntryType"
 	case XObjectHashLogEntryType:
 		return "XObjectHashLogEntryType"
+	case XCMSLogEntryType:
+		return "XCMSLogEntryType"
 	default:
 		return fmt.Sprintf("UnknownEntryType(%d)", e)
 	}
@@ -242,6 +245,9 @@ type LogEntry struct {
 	// Set for type XObjectHashLogEntryType
 	ObjectHash ObjectHash
 	ObjectData map[string]interface{}
+
+	// For CMS type
+	CMSData []byte
 }
 
 // PrecertChainEntry holds an precertificate together with a validation chain
@@ -259,6 +265,11 @@ type CertificateChain struct {
 
 // JSONDataEntry holds arbitrary data.
 type JSONDataEntry struct {
+	Data []byte `tls:"minlen:0,maxlen:1677215"`
+}
+
+// CMSEntry is signed data
+type CMSEntry struct {
 	Data []byte `tls:"minlen:0,maxlen:1677215"`
 }
 
@@ -340,6 +351,7 @@ type CertificateTimestamp struct {
 	PrecertEntry    *PreCert       `tls:"selector:EntryType,val:1"`
 	JSONEntry       *JSONDataEntry `tls:"selector:EntryType,val:32768"`
 	ObjectHashEntry *ObjectHash    `tls:"selector:EntryType,val:32769"`
+	CMSEntry        *CMSEntry      `tls:"selector:EntryType,val:32770"`
 	Extensions      CTExtensions   `tls:"minlen:0,maxlen:65535"`
 }
 
@@ -359,6 +371,7 @@ type TimestampedEntry struct {
 	PrecertEntry    *PreCert       `tls:"selector:EntryType,val:1"`
 	JSONEntry       *JSONDataEntry `tls:"selector:EntryType,val:32768"`
 	ObjectHashEntry *ObjectHash    `tls:"selector:EntryType,val:32769"`
+	CMSEntry        *CMSEntry      `tls:"selector:EntryType,val:32770"`
 	Extensions      CTExtensions   `tls:"minlen:0,maxlen:65535"`
 }
 
@@ -438,6 +451,7 @@ const (
 
 	AddJSONPath       = "/ct/v1/add-json"       // Experimental addition
 	AddObjectHashPath = "/ct/v1/add-objecthash" // Experimental addition
+	AddCMSPath        = "/ct/v1/add-cms"        // Experimental addition
 )
 
 // AddChainRequest represents the JSON request body sent to the add-chain and
@@ -471,6 +485,13 @@ type AddJSONRequest struct {
 type AddObjectHashRequest struct {
 	Hash      ObjectHash  `json:"hash"`
 	ExtraData interface{} `json:"extra_data"`
+}
+
+// AddCMSRequest
+// The corresponding response re-uses AddChainResponse.
+// This is an experimental addition not covered by RFC6962.
+type AddCMSRequest struct {
+	Data []byte `json:"data"`
 }
 
 // GetSTHResponse respresents the JSON response to the get-sth GET method from section 4.3.
